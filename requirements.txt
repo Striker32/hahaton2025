@@ -1,0 +1,11 @@
+earthaccess==0.14.0
+geopandas==1.0.1
+matplotlib==3.10.1
+numpy==1.26.4
+scikit-fuzzy==0.5.0
+scipy==1.11.3
+xarray==2025.3.0
+cartopy==0.22.0
+flask==3.1.2
+plotly==5.24.1
+pydap==3.5

@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Арктические карты рисков навигации</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .month-selector {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .month-selector h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .month-btn {
+            padding: 15px 20px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .month-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .month-btn.selected {
+            background: #2980b9;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .generate-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .results-header {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .results-header h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .maps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .map-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .map-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .map-card h3 {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.3em;
+        }
+
+        .map-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .map-card img:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95vh;
+            animation: zoomIn 0.3s;
+        }
+
+        .modal-content img {
+            width: 100%;
+            height: auto;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+            background: none;
+            border: none;
+            padding: 10px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #f39c12;
+        }
+
+        .modal-title {
+            position: absolute;
+            top: -50px;
+            left: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .routes-analysis {
+            margin: 30px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .routes-analysis h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .best-route-card {
+            background: linear-gradient(135deg, #fff9c4 0%, #ffe082 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 3px solid #f39c12;
+            box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
+        }
+
+        .best-route-card h3 {
+            color: #e67e22;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .best-route-card p {
+            color: #555;
+            font-size: 1.1em;
+            margin: 5px 0;
+        }
+
+        .routes-table {
+            overflow-x: auto;
+        }
+
+        .routes-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .routes-table th {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .routes-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .routes-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .routes-table tr.best-route {
+            background: #fff9c4;
+            font-weight: 600;
+        }
+
+        .routes-table tr.best-route td:first-child::before {
+            content: '⭐ ';
+        }
+
+        .interactive-section {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .interactive-section h3 {
+            color: white;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .interactive-btn {
+            display: inline-block;
+            padding: 20px 50px;
+            background: white;
+            color: #e74c3c;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.4em;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .interactive-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+        }
+
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚓ Арктические карты рисков навигации</h1>
+            <p>Северный морской путь | Комплексный анализ ледовой обстановки и метеоусловий</p>
+        </div>
+
+        <div class="content">
+            <div class="month-selector">
+                <h2>📅 Выберите месяц для анализа</h2>
+                <div class="months-grid">
+                    {% for month in months %}
+                    <button class="month-btn" data-index="{{ month.index }}" data-name="{{ month.name }}">
+                        {{ month.name }} 2024
+                    </button>
+                    {% endfor %}
+                </div>
+                <button class="generate-btn" id="generateBtn" disabled>
+                    🚀 Сгенерировать карты
+                </button>
+            </div>
+
+            <div class="error" id="errorMsg"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Загрузка данных и генерация карт...</p>
+                <p style="font-size: 0.9em; margin-top: 10px;">Это может занять 30-60 секунд</p>
+            </div>
+
+            <div class="results" id="results">
+                <div class="results-header">
+                    <h2 id="resultsTitle">Результаты анализа</h2>
+                </div>
+
+                <div class="maps-grid">
+                    <div class="map-card">
+                        <h3>🧊 Карта ледовых рисков</h3>
+                        <img id="iceMap" src="" alt="Карта ледовых рисков">
+                    </div>
+                    <div class="map-card">
+                        <h3>🌬️ Карта скорости ветра</h3>
+                        <img id="windMap" src="" alt="Карта ветров">
+                    </div>
+                    <div class="map-card">
+                        <h3>⚠️ Комплексная карта рисков</h3>
+                        <img id="combinedMap" src="" alt="Комплексная карта">
+                    </div>
+                </div>
+
+                <div class="routes-analysis" id="routesAnalysis" style="display: none;">
+                    <h2>🛤️ Анализ маршрутов</h2>
+                    <div class="best-route-card">
+                        <h3>⭐ Рекомендованный маршрут: <span id="bestRouteName"></span></h3>
+                        <p><strong>Причина выбора:</strong> <span id="bestRouteReason"></span></p>
+                    </div>
+                    <div class="routes-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Маршрут</th>
+                                    <th>Длина (км)</th>
+                                    <th>Средний риск</th>
+                                    <th>Макс. риск</th>
+                                    <th>Точки высокого риска</th>
+                                    <th>Точки критич. риска</th>
+                                </tr>
+                            </thead>
+                            <tbody id="routesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="interactive-section">
+                    <h3>🌐 Интерактивная 3D карта</h3>
+                    <a href="#" class="interactive-btn" id="interactiveBtn" target="_blank">
+                        Открыть интерактивную карту
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle"></div>
+            <button class="modal-close" id="modalClose">&times;</button>
+            <img id="modalImage" src="" alt="">
+        </div>
+    </div>
+
+    <script>
+        let selectedMonth = null;
+        let mapsCache = {};
+
+        // Загрузка кэша из localStorage при загрузке страницы
+        try {
+            const savedCache = localStorage.getItem('mapsCache');
+            if (savedCache) {
+                mapsCache = JSON.parse(savedCache);
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки кэша:', e);
+        }
+
+        function saveCacheToStorage() {
+            try {
+                localStorage.setItem('mapsCache', JSON.stringify(mapsCache));
+            } catch (e) {
+                console.error('Ошибка сохранения кэша:', e);
+            }
+        }
+
+        function displayCachedMaps(monthIndex) {
+            const cached = mapsCache[monthIndex];
+            if (!cached) return;
+            
+            fetch(`/check_map/${monthIndex}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.exists) {
+                        delete mapsCache[monthIndex];
+                        saveCacheToStorage();
+                        document.getElementById('results').classList.remove('active');
+                        return;
+                    }
+                    
+                    document.getElementById('resultsTitle').textContent = 
+                        `Результаты анализа за ${cached.month_name} 2024`;
+                    
+                    document.getElementById('iceMap').src = 'data:image/png;base64,' + cached.ice_map;
+                    document.getElementById('windMap').src = 'data:image/png;base64,' + cached.wind_map;
+                    document.getElementById('combinedMap').src = 'data:image/png;base64,' + cached.combined_map;
+                    document.getElementById('interactiveBtn').href = cached.interactive_map_url;
+                    
+                    if (cached.routes_stats && cached.best_route) {
+                        document.getElementById('bestRouteName').textContent = cached.best_route;
+                        document.getElementById('bestRouteReason').textContent = cached.best_route_reason;
+                        
+                        const tbody = document.getElementById('routesTableBody');
+                        tbody.innerHTML = '';
+                        
+                        cached.routes_stats.forEach(route => {
+                            const row = document.createElement('tr');
+                            if (route.name === cached.best_route) {
+                                row.classList.add('best-route');
+                            }
+                            
+                            row.innerHTML = `
+                                <td>${route.name}</td>
+                                <td>${route.length}</td>
+                                <td>${route.avg_risk}</td>
+                                <td>${route.max_risk}</td>
+                                <td>${route.high_risk_points}</td>
+                                <td>${route.critical_risk_points}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                        
+                        document.getElementById('routesAnalysis').style.display = 'block';
+                    }
+                    
+                    document.getElementById('results').classList.add('active');
+                    
+                    document.getElementById('results').scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                })
+                .catch(() => {
+                    delete mapsCache[monthIndex];
+                    saveCacheToStorage();
+                    document.getElementById('results').classList.remove('active');
+                });
+        }
+
+        // Выбор месяца
+        document.querySelectorAll('.month-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedMonth = {
+                    index: parseInt(this.dataset.index),
+                    name: this.dataset.name
+                };
+                document.getElementById('generateBtn').disabled = false;
+                
+                if (mapsCache[selectedMonth.index]) {
+                    displayCachedMaps(selectedMonth.index);
+                } else {
+                    document.getElementById('results').classList.remove('active');
+                }
+            });
+        });
+
+        // Генерация карт
+        document.getElementById('generateBtn').addEventListener('click', async function() {
+            if (!selectedMonth) return;
+
+            // Скрываем результаты и ошибки
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('errorMsg').classList.remove('active');
+            
+            // Показываем загрузку
+            document.getElementById('loading').classList.add('active');
+            this.disabled = true;
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        month_index: selectedMonth.index
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Скрываем загрузку
+                document.getElementById('loading').classList.remove('active');
+
+                // Показываем результаты
+                document.getElementById('resultsTitle').textContent = 
+                    `Результаты анализа за ${data.month_name} 2024`;
+                
+                document.getElementById('iceMap').src = 'data:image/png;base64,' + data.ice_map;
+                document.getElementById('windMap').src = 'data:image/png;base64,' + data.wind_map;
+                document.getElementById('combinedMap').src = 'data:image/png;base64,' + data.combined_map;
+                document.getElementById('interactiveBtn').href = data.interactive_map_url;
+
+                if (data.routes_stats && data.best_route) {
+                    document.getElementById('bestRouteName').textContent = data.best_route;
+                    document.getElementById('bestRouteReason').textContent = data.best_route_reason;
+                    
+                    const tbody = document.getElementById('routesTableBody');
+                    tbody.innerHTML = '';
+                    
+                    data.routes_stats.forEach(route => {
+                        const row = document.createElement('tr');
+                        if (route.name === data.best_route) {
+                            row.classList.add('best-route');
+                        }
+                        
+                        row.innerHTML = `
+                            <td>${route.name}</td>
+                            <td>${route.length}</td>
+                            <td>${route.avg_risk}</td>
+                            <td>${route.max_risk}</td>
+                            <td>${route.high_risk_points}</td>
+                            <td>${route.critical_risk_points}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    document.getElementById('routesAnalysis').style.display = 'block';
+                }
+
+                mapsCache[selectedMonth.index] = {
+                    ice_map: data.ice_map,
+                    wind_map: data.wind_map,
+                    combined_map: data.combined_map,
+                    interactive_map_url: data.interactive_map_url,
+                    month_name: data.month_name,
+                    routes_stats: data.routes_stats,
+                    best_route: data.best_route,
+                    best_route_reason: data.best_route_reason
+                };
+                
+                saveCacheToStorage();
+
+                document.getElementById('results').classList.add('active');
+
+                // Плавная прокрутка к результатам
+                document.getElementById('results').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+
+            } catch (error) {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('errorMsg').textContent = 
+                    '❌ Ошибка: ' + error.message;
+                document.getElementById('errorMsg').classList.add('active');
+            } finally {
+                this.disabled = false;
+            }
+        });
+
+        // Image modal functionality
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalClose = document.getElementById('modalClose');
+
+        function openImageModal(imgSrc, title) {
+            modal.classList.add('active');
+            modalImg.src = imgSrc;
+            modalTitle.textContent = title;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal on click
+        modalClose.addEventListener('click', closeImageModal);
+        
+        // Close modal when clicking outside image
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeImageModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeImageModal();
+            }
+        });
+
+        // Add click handlers to map images (delegated event)
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'iceMap') {
+                openImageModal(e.target.src, '🧊 Карта ледовых рисков');
+            } else if (e.target.id === 'windMap') {
+                openImageModal(e.target.src, '🌬️ Карта скорости ветра');
+            } else if (e.target.id === 'combinedMap') {
+                openImageModal(e.target.src, '⚠️ Комплексная карта рисков');
+            }
+        });
+    </script>
+</body>
+</html>
